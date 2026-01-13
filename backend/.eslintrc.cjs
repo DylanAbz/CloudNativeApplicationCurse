@@ -3,10 +3,11 @@ module.exports = {
     env: {
         node: true,
         es2021: true,
+        jest: true
     },
     parserOptions: {
         ecmaVersion: 'latest',
-        sourceType: 'script', // CommonJS
+        sourceType: 'module', // ES Modules
     },
     extends: [
         'eslint:recommended',
