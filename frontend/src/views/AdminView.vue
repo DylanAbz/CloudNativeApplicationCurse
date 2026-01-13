@@ -288,8 +288,7 @@ import {
   dashboardService, 
   userService, 
   classService, 
-  bookingService, 
-  subscriptionService 
+  bookingService 
 } from '../services/gymService'
 
 export default {
