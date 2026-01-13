@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "test": "jest",
     "seed": "node seed/seed.js",
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate deploy",
@@ -26,9 +27,11 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-node": "^11.1.0",
     "globals": "^17.0.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.0.1",
     "prettier": "^3.7.4",
-    "prisma": "^5.6.0"
+    "prisma": "^5.6.0",
+    "supertest": "^7.2.2"
   },
   "engines": {
     "node": ">=18.0.0"
