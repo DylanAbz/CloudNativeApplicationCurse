@@ -2,6 +2,8 @@
 
 This is a test to check husky and commitlint.
 
+Prérequis : installer Gitleaks (via choco install gitleaks sous Windows, voir doc officielle).
+
 ### ✔ Règles Git utilisées
 
 - Branches principales : `main`, `develop`
