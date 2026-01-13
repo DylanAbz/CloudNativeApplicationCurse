@@ -108,9 +108,11 @@ jobs:
       - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          npx sonar-scanner \
-            -Dsonar.projectKey=DylanAbz_CloudNativeApplicationCurse \
-            -Dsonar.organization=dylanabz \
-            -Dsonar.sources=backend/src \
-            -Dsonar.host.url=https://sonarcloud.io
+        run: >
+          npx sonar-scanner
+          -Dsonar.projectKey=DylanAbz_CloudNativeApplicationCurse
+          -Dsonar.organization=dylanabz
+          -Dsonar.sources=backend/src
+          -Dsonar.host.url=https://sonarcloud.io
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+  
