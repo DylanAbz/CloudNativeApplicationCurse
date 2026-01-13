@@ -13,7 +13,7 @@ async function main() {
 
   // Create users
   console.log('👥 Creating users...');
-  const admin = await prisma.user.create({
+  await prisma.user.create({
     data: {
       firstname: 'Admin',
       lastname: 'User',
@@ -42,7 +42,7 @@ async function main() {
 
   // Create subscriptions
   console.log('📋 Creating subscriptions...');
-  const subscription1 = await prisma.subscription.create({
+  await prisma.subscription.create({
     data: {
       userId: user1.id,
       planType: 'PREMIUM',
@@ -53,7 +53,7 @@ async function main() {
     }
   });
 
-  const subscription2 = await prisma.subscription.create({
+  await prisma.subscription.create({
     data: {
       userId: user2.id,
       planType: 'STANDARD',
@@ -67,14 +67,12 @@ async function main() {
   // Create classes for the next month
   console.log('🏋️ Creating classes...');
   const now = new Date();
-  const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const nextMonth = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   const class1 = await prisma.class.create({
     data: {
       title: 'Yoga Matinal',
       coach: 'Sophie Laurent',
-      datetime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000), // +2 days
+      datetime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
       duration: 60,
       capacity: 8,
       isCancelled: false
@@ -85,7 +83,7 @@ async function main() {
     data: {
       title: 'CrossFit Intense',
       coach: 'Marc Dubois',
-      datetime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), // +3 days
+      datetime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
       duration: 45,
       capacity: 12,
       isCancelled: false
@@ -96,7 +94,7 @@ async function main() {
     data: {
       title: 'Pilates Débutant',
       coach: 'Emma Wilson',
-      datetime: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000), // +5 days
+      datetime: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
       duration: 50,
       capacity: 6,
       isCancelled: false
@@ -107,31 +105,31 @@ async function main() {
     data: {
       title: 'Zumba Party',
       coach: 'Carlos Rodriguez',
-      datetime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // +7 days
+      datetime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
       duration: 55,
       capacity: 10,
       isCancelled: false
     }
   });
 
-  // Create a cancelled class for testing
-  const class5 = await prisma.class.create({
+  // Cancelled class for testing
+  await prisma.class.create({
     data: {
       title: 'Musculation Avancée',
       coach: 'Jean Muscle',
-      datetime: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000), // +10 days
+      datetime: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000),
       duration: 90,
       capacity: 8,
-      isCancelled: true // This class is cancelled
+      isCancelled: true
     }
   });
 
-  // Create some past classes for no-show testing
+  // Past classes for no-show testing
   const pastClass1 = await prisma.class.create({
     data: {
       title: 'Cours Passé 1',
       coach: 'Past Coach',
-      datetime: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // -2 days
+      datetime: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
       duration: 60,
       capacity: 10,
       isCancelled: false
@@ -142,7 +140,7 @@ async function main() {
     data: {
       title: 'Cours Passé 2',
       coach: 'Past Coach',
-      datetime: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000), // -5 days
+      datetime: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
       duration: 45,
       capacity: 8,
       isCancelled: false
@@ -151,9 +149,9 @@ async function main() {
 
   // Create bookings with various scenarios
   console.log('📅 Creating bookings...');
-  
-  // User1 bookings - some confirmed, some cancelled
-  const booking1 = await prisma.booking.create({
+
+  // User1 bookings
+  await prisma.booking.create({
     data: {
       userId: user1.id,
       classId: class1.id,
@@ -161,7 +159,7 @@ async function main() {
     }
   });
 
-  const booking2 = await prisma.booking.create({
+  await prisma.booking.create({
     data: {
       userId: user1.id,
       classId: class2.id,
@@ -169,7 +167,7 @@ async function main() {
     }
   });
 
-  const booking3 = await prisma.booking.create({
+  await prisma.booking.create({
     data: {
       userId: user1.id,
       classId: class3.id,
@@ -177,8 +175,8 @@ async function main() {
     }
   });
 
-  // User2 bookings - including no-shows
-  const booking4 = await prisma.booking.create({
+  // User2 bookings
+  await prisma.booking.create({
     data: {
       userId: user2.id,
       classId: class1.id,
@@ -186,7 +184,7 @@ async function main() {
     }
   });
 
-  const booking5 = await prisma.booking.create({
+  await prisma.booking.create({
     data: {
       userId: user2.id,
       classId: class4.id,
@@ -195,32 +193,31 @@ async function main() {
   });
 
   // Past bookings for no-show scenario
-  const booking6 = await prisma.booking.create({
+  await prisma.booking.create({
     data: {
       userId: user1.id,
       classId: pastClass1.id,
-      status: 'NO_SHOW' // This was a no-show
+      status: 'NO_SHOW'
     }
   });
 
-  const booking7 = await prisma.booking.create({
+  await prisma.booking.create({
     data: {
       userId: user2.id,
       classId: pastClass1.id,
-      status: 'CONFIRMED' // This user attended
+      status: 'CONFIRMED'
     }
   });
 
-  const booking8 = await prisma.booking.create({
+  await prisma.booking.create({
     data: {
       userId: user2.id,
       classId: pastClass2.id,
-      status: 'NO_SHOW' // Another no-show for user2
+      status: 'NO_SHOW'
     }
   });
 
   // Fill up class3 to test "class full" scenario
-  // We need to create more users to fill the class (capacity: 6)
   const extraUsers = [];
   for (let i = 0; i < 5; i++) {
     const extraUser = await prisma.user.create({
@@ -233,7 +230,6 @@ async function main() {
     });
     extraUsers.push(extraUser);
 
-    // Create subscription for extra user
     await prisma.subscription.create({
       data: {
         userId: extraUser.id,
@@ -245,7 +241,6 @@ async function main() {
       }
     });
 
-    // Book the class
     await prisma.booking.create({
       data: {
         userId: extraUser.id,
@@ -275,10 +270,11 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Error during seeding:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+    .catch((e) => {
+      console.error('❌ Error during seeding:', e);
+      // eslint-disable-next-line no-process-exit
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });

@@ -31,7 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (stored) {
       try {
         currentUser.value = JSON.parse(stored)
-      } catch (e) {
+      } catch (_e) { // eslint-disable-line no-unused-vars
         localStorage.removeItem('currentUser')
       }
     }
