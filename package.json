@@ -2,12 +2,14 @@
   "devDependencies": {
     "@commitlint/cli": "^20.3.1",
     "@commitlint/config-conventional": "^20.3.1",
+    "gitleaks": "^1.0.0",
     "husky": "^9.1.7"
   },
   "scripts": {
     "prepare": "husky install",
     "lint:front": "cd frontend && npm run lint",
     "lint:back": "cd backend && npm run lint",
-    "lint:all": "npm run lint:front && npm run lint:back"
+    "lint:all": "npm run lint:front && npm run lint:back",
+    "gitleaks": "gitleaks detect --staged --no-banner"
   }
 }
