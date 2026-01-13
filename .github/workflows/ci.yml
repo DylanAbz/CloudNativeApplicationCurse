@@ -1,118 +1,106 @@
 name: CI
-
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-
 jobs:
   lint:
     name: Lint front & back
     runs-on: self-hosted
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Use Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       # Lint frontend
       - name: Install frontend deps
         working-directory: ./frontend
         run: npm install
-
       - name: Lint frontend
         working-directory: ./frontend
         run: npm run lint
-
       # Lint backend
       - name: Install backend deps
         working-directory: ./backend
         run: npm install
-
       - name: Lint backend
         working-directory: ./backend
         run: npm run lint
-
-  build:
+  build-frontend:
     name: Build frontend
     runs-on: self-hosted
     needs: lint
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Use Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install frontend deps
         working-directory: ./frontend
         run: npm install
-
       - name: Build frontend
         working-directory: ./frontend
         run: npm run build
-
-  tests:
-    name: Tests backend
+  build-backend:
+    name: Build backend
     runs-on: self-hosted
-    needs: build
-
+    needs: lint
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Use Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install backend deps
         working-directory: ./backend
         run: npm install
-
-      # Si tu as des tests backend (NestJS ou autre), active ceci :
-      # - name: Run backend tests
-      #   working-directory: ./backend
-      #   run: npm test
-
-      # Placeholder si tu n'as pas encore de tests :
-      - name: Placeholder backend tests
-        run: echo "No backend tests implemented yet"
-
+      - name: Build backend
+        working-directory: ./backend
+        run: npm run db:setup
+  tests:
+    name: Tests backend
+    runs-on: self-hosted
+    needs: build-backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install backend deps
+        working-directory: ./backend
+        run: npm install
+      - name: Run backend tests
+        working-directory: ./backend
+        run: npm test
   sonar:
     name: SonarCloud
     runs-on: self-hosted
     needs: tests
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Use Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install backend deps
         working-directory: ./backend
         run: npm install
-
       - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >
           npx sonar-scanner
-          -Dsonar.projectKey=DylanAbz_CloudNativeApplicationCurse
-          -Dsonar.organization=dylanabz
-          -Dsonar.sources=backend/src
-          -Dsonar.host.url=https://sonarcloud.io
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-  
+          -D"sonar.projectKey=DylanAbz_CloudNativeApplicationCurse"
+          -D"sonar.organization=dylanabz"
+          -D"sonar.sources=backend/src"
+          -D"sonar.host.url=https://sonarcloud.io"
+          -D"sonar.login=${{ secrets.SONAR_TOKEN }}"
