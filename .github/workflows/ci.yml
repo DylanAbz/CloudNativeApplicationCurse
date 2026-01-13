@@ -62,7 +62,7 @@ jobs:
         run: npm install
       - name: Build backend
         working-directory: ./backend
-        run: npm run db:setup
+        run: npm run build
   tests:
     name: Tests backend
     runs-on: self-hosted
