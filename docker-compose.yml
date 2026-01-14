@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:13-alpine
+    container_name: gym_postgres_db
+    environment:
+      # These environment variables are specific to the PostgreSQL container
+      # and should match the details provided in the DATABASE_URL.
+      POSTGRES_DB: gym_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d gym_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Backend Service (Node.js)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gym_backend_app
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      # These environment variables are passed directly from the .env file
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: ${PORT}
+      NODE_ENV: ${NODE_ENV}
+      FRONTEND_URL: ${FRONTEND_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Frontend Service (Vue.js + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    container_name: gym_frontend_app
+    ports:
+      - "8080:80" # Host port 8080 mapped to container port 80
+    depends_on:
+      # This ensures the backend service is started, but not necessarily healthy,
+      # before the frontend attempts to build/run.
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

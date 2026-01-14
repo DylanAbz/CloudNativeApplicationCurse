@@ -104,3 +104,61 @@ jobs:
           -D"sonar.sources=backend/src"
           -D"sonar.host.url=https://sonarcloud.io"
           -D"sonar.login=${{ secrets.SONAR_TOKEN }}"
+
+  docker-build-and-push:
+    name: Build & push Docker images
+    runs-on: self-hosted
+    needs: sonar          # on ne build/push que si tout avant est OK
+    permissions:
+      contents: read
+      packages: write     # nécessaire pour pousser sur GHCR
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_BACKEND: cloudnative-backend
+      IMAGE_FRONTEND: cloudnative-frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: DylanAbz
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 1) Build des images Docker
+      - name: Build backend image
+        run: |
+          docker build -t backend-ci ./backend
+
+      - name: Build frontend image
+        run: |
+          docker build -t frontend-ci ./frontend
+
+      # 2) Healthcheck simple (les conteneurs démarrent)
+      - name: Smoke test backend container
+        run: |
+          docker run -d --rm --name backend-ci-test -p 3000:3000 backend-ci
+          sleep 10
+          docker ps --filter "name=backend-ci-test" --format "{{.Names}}"
+          docker stop backend-ci-test
+
+      - name: Smoke test frontend container
+        run: |
+          docker run -d --rm --name frontend-ci-test -p 8080:80 frontend-ci
+          sleep 10
+          docker ps --filter "name=frontend-ci-test" --format "{{.Names}}"
+          docker stop frontend-ci-test
+
+      # 3) Tag & push vers GHCR
+      - name: Tag & push backend image
+        run: |
+          docker tag backend-ci ghcr.io/DylanAbz/${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+          docker push ghcr.io/DylanAbz/${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+
+      - name: Tag & push frontend image
+        run: |
+          docker tag frontend-ci ghcr.io/DylanAbz/${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+          docker push ghcr.io/DylanAbz/${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+
