@@ -173,3 +173,29 @@ jobs:
           docker tag frontend-ci ghcr.io/dylanabz/${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
           docker push ghcr.io/dylanabz/${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
 
+  deploy:
+    name: Deploy to local Docker
+    runs-on: self-hosted
+    needs: docker-build-and-push
+    if: github.ref == 'refs/heads/develop'   # ou 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy using script
+        shell: pwsh
+        run: |
+          ./scripts/deploy.ps1 -Sha "${{ github.sha }}"
+
