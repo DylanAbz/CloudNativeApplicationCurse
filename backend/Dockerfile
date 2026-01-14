@@ -27,4 +27,4 @@ ENV NODE_ENV=development
 ENV PORT=3000
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
+CMD ["sh", "-c", "if [ \"$SKIP_DB\" = \"true\" ]; then echo 'Skipping DB migrations for smoke test'; node src/index.js; else npx prisma migrate deploy && node src/index.js; fi"]
