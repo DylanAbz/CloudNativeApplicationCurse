@@ -108,10 +108,10 @@ jobs:
   docker-build-and-push:
     name: Build & push Docker images
     runs-on: self-hosted
-    needs: sonar          # on ne build/push que si tout avant est OK
+    needs: sonar
     permissions:
       contents: read
-      packages: write     # nécessaire pour pousser sur GHCR
+      packages: write
     env:
       REGISTRY: ghcr.io
       IMAGE_BACKEND: cloudnative-backend
@@ -138,6 +138,7 @@ jobs:
 
       # 2) Healthcheck simple (les conteneurs démarrent)
       - name: Smoke test backend container (no DB)
+        shell: powershell
         run: |
           docker run -d --rm --name backend-ci-test `
             -e SKIP_DB=true `
@@ -156,22 +157,44 @@ jobs:
           }
 
       - name: Smoke test frontend container
+        shell: powershell
         run: |
           docker run -d --rm --name frontend-ci-test frontend-ci
-          sleep 10
+          Start-Sleep -Seconds 10
           docker ps --filter "name=frontend-ci-test" --format "{{.Names}}"
-          docker stop frontend-ci-test
+          docker stop frontend-ci-test | Out-Null
 
-      # 3) Tag & push vers GHCR
-      - name: Tag & push backend image
+      # 3) Tag & push SHA (main + develop uniquement)
+      - name: Tag & push backend image (sha)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
           docker tag backend-ci ghcr.io/dylanabz/${{ env.IMAGE_BACKEND }}:${{ github.sha }}
           docker push ghcr.io/dylanabz/${{ env.IMAGE_BACKEND }}:${{ github.sha }}
 
-      - name: Tag & push frontend image
+      - name: Tag & push frontend image (sha)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
           docker tag frontend-ci ghcr.io/dylanabz/${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
           docker push ghcr.io/dylanabz/${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+
+      # 4) Tag & push latest (develop uniquement)
+      - name: Tag & push images as latest (develop)
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          docker tag backend-ci ghcr.io/dylanabz/${{ env.IMAGE_BACKEND }}:latest
+          docker push ghcr.io/dylanabz/${{ env.IMAGE_BACKEND }}:latest
+          docker tag frontend-ci ghcr.io/dylanabz/${{ env.IMAGE_FRONTEND }}:latest
+          docker push ghcr.io/dylanabz/${{ env.IMAGE_FRONTEND }}:latest
+
+      # 5) Tag & push stable (main uniquement)
+      - name: Tag & push images as stable (main)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker tag backend-ci ghcr.io/dylanabz/${{ env.IMAGE_BACKEND }}:stable
+          docker push ghcr.io/dylanabz/${{ env.IMAGE_BACKEND }}:stable
+          docker tag frontend-ci ghcr.io/dylanabz/${{ env.IMAGE_FRONTEND }}:stable
+          docker push ghcr.io/dylanabz/${{ env.IMAGE_FRONTEND }}:stable
+  
 
   deploy:
     name: Deploy to local Docker
