@@ -137,12 +137,23 @@ jobs:
           docker build -t frontend-ci ./frontend
 
       # 2) Healthcheck simple (les conteneurs démarrent)
-      - name: Smoke test backend container
+      - name: Smoke test backend container (no DB)
         run: |
-          docker run -d --rm --name backend-ci-test backend-ci
+          docker run -d --rm --name backend-ci-test \
+            -e SKIP_DB=true \
+            backend-ci
+
           sleep 10
-          docker ps --filter "name=backend-ci-test" --format "{{.Names}}"
-          docker stop backend-ci-test
+
+          if docker ps --filter "name=backend-ci-test" --format "{{.Names}}" | findstr backend-ci-test; then
+            echo "Backend container is running, stopping it."
+            docker stop backend-ci-test
+          else
+            echo "Backend container exited early, showing logs:"
+            docker logs backend-ci-test || echo "no logs available"
+            exit 1
+          fi
+      
 
       - name: Smoke test frontend container
         run: |
