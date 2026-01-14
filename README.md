@@ -60,3 +60,27 @@ Frontend : `ghcr.io/dylanabz/cloudnative-frontend:latest`
 - Secrets attendus dans le repo :
   - `SONAR_TOKEN` : token SonarCloud
   - `GITHUB_TOKEN` : fourni automatiquement par GitHub Actions pour pousser les images sur GHCR
+
+
+## 🔄 Déploiement local automatisé
+
+Le pipeline CI exécute automatiquement un stage **deploy** sur le runner local après un build réussi et le push des images Docker vers GHCR.
+
+Workflow complet :
+`lint → build → tests → build images → push GHCR → deploy`
+
+Le job `deploy` :
+- arrête les conteneurs existants via `docker compose down` (sans supprimer les volumes) ;
+- récupère les dernières images buildées :
+  - `ghcr.io/dylanabz/cloudnative-backend:<SHA>`
+  - `ghcr.io/dylanabz/cloudnative-frontend:<SHA>`
+- relance tout l’environnement avec `docker compose up -d`.
+
+Conditions d’exécution :
+- un runner GitHub Actions **self-hosted** actif avec Docker installé ;
+- accès au registre GHCR via `GITHUB_TOKEN` (fourni par GitHub) ;
+- le déploiement automatique est actif uniquement sur la branche `develop` (adapter ici si tu le mets sur `main`).
+
+L’application est alors accessible après chaque pipeline complet :
+- Frontend : http://localhost:8080
+- Backend : http://localhost:3000
