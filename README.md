@@ -1,6 +1,7 @@
 # CloudNativeApplicationCurse
 
 [![SonarCloud Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=DylanAbz_CloudNativeApplicationCurse&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=DylanAbz_CloudNativeApplicationCurse)
+[![CI](https://github.com/DylanAbz/CloudNativeApplicationCurse/actions/workflows/ci.yml/badge.svg)](https://github.com/DylanAbz/CloudNativeApplicationCurse/actions/workflows/ci.yml)
 
 This is a test to check husky and commitlint.
 
@@ -25,3 +26,37 @@ Exemples :
 
 - `pre-commit` : lint front + back
 - `commit-msg` : vérification commitlint
+
+
+## 🚀 Lancer l’environnement avec Docker Compose
+
+Prérequis : Docker Desktop installé (mode Linux).
+
+Depuis la racine du projet :
+
+```bash
+docker compose up --build
+```
+
+- Frontend : http://localhost:8080
+- Backend : http://localhost:3000
+- Postgres : uniquement accessible depuis les conteneurs (service `postgres`).
+
+## 📦 Images Docker publiées
+
+Backend : `ghcr.io/dylanabz/cloudnative-backend:latest`  
+Frontend : `ghcr.io/dylanabz/cloudnative-frontend:latest`
+
+
+## 🧬 Conditions d’exécution du pipeline CI
+
+- Nécessite un runner GitHub Actions **self-hosted** avec Docker installé.  
+- Les jobs exécutés :
+  - Lint frontend & backend
+  - Build frontend & backend
+  - Tests backend
+  - Analyse SonarCloud
+  - Build, smoke test (sans DB) et push des images Docker vers GHCR
+- Secrets attendus dans le repo :
+  - `SONAR_TOKEN` : token SonarCloud
+  - `GITHUB_TOKEN` : fourni automatiquement par GitHub Actions pour pousser les images sur GHCR
