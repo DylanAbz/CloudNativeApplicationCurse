@@ -195,7 +195,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy using script
-        shell: pwsh
+        shell: powershell
         run: |
           ./scripts/deploy.ps1 -Sha "${{ github.sha }}"
 
