@@ -227,5 +227,86 @@ jobs:
         shell: powershell
         run: |
           ./scripts/deploy.ps1 -Sha "${{ github.sha }}"
+
+  blue-green-deploy:
+      name: Blue/Green deploy
+      runs-on: self-hosted
+      needs: docker-build-and-push
+      if: github.ref == 'refs/heads/main'
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Login to GitHub Container Registry
+          uses: docker/login-action@v3
+          with:
+            registry: ghcr.io
+            username: dylanabz
+            password: ${{ secrets.GITHUB_TOKEN }}
+
+        # Créer un .env minimal pour les compose blue/green
+        - name: Create .env file for blue/green
+          shell: powershell
+          run: |
+            @"
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            NODE_ENV=development
+            FRONTEND_URL=http://localhost
+            "@ | Out-File -FilePath ".env" -Encoding UTF8
+
+        # Lire la couleur active et calculer la prochaine
+        - name: Determine active and next color
+          id: color
+          shell: powershell
+          run: |
+            $path = "blue-green/active_color"
+            if (Test-Path $path) {
+              $active = (Get-Content $path).Trim()
+            } else {
+              $active = "blue"
+            }
+            
+            if ($active -eq "blue") {
+              $next = "green"
+            } else {
+              $next = "blue"
+            }
+            
+            Write-Host "Active color: $active"
+            Write-Host "Next color: $next"
+            
+            "active=$active" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            "next=$next"     | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+        # Déployer la nouvelle version sur la couleur inactive
+        - name: Deploy next color stack
+          shell: powershell
+          run: |
+            $next = "${{ steps.color.outputs.next }}"
+            $sha  = "${{ github.sha }}"
+            $env:BACKEND_TAG  = $sha
+            $env:FRONTEND_TAG = $sha
+            
+            if ($next -eq "blue") {
+              docker compose -f docker-compose.base.yml -f docker-compose.blue.yml up -d --env-file .env
+            } else {
+              docker compose -f docker-compose.base.yml -f docker-compose.green.yml up -d --env-file .env
+            }
+
+        # Bascule du proxy vers la nouvelle couleur
+        - name: Switch Nginx to next color
+          shell: powershell
+          run: |
+            $next = "${{ steps.color.outputs.next }}"
+            Copy-Item "proxy/active_upstream.$next.conf" "proxy/active_upstream.conf" -Force
+            docker exec gym_proxy nginx -s reload
+
+        # Mise à jour du fichier active_color
+        - name: Update active color file
+          shell: powershell
+          run: |
+            $next = "${{ steps.color.outputs.next }}"
+            Set-Content -Path "blue-green/active_color" -Value $next
+
   
 

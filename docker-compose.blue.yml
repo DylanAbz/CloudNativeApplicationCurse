@@ -1,0 +1,22 @@
+services:
+  backend-blue:
+    image: ghcr.io/dylanabz/cloudnative-backend:${BACKEND_TAG}
+    container_name: gym_backend_blue
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: 3000
+      NODE_ENV: ${NODE_ENV}
+      FRONTEND_URL: ${FRONTEND_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  frontend-blue:
+    image: ghcr.io/dylanabz/cloudnative-frontend:${FRONTEND_TAG}
+    container_name: gym_frontend_blue
+    depends_on:
+      - backend-blue
+    networks:
+      - app-network
