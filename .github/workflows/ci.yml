@@ -139,14 +139,14 @@ jobs:
       # 2) Healthcheck simple (les conteneurs démarrent)
       - name: Smoke test backend container
         run: |
-          docker run -d --rm --name backend-ci-test -p 3000:3000 backend-ci
+          docker run -d --rm --name backend-ci-test backend-ci
           sleep 10
           docker ps --filter "name=backend-ci-test" --format "{{.Names}}"
           docker stop backend-ci-test
 
       - name: Smoke test frontend container
         run: |
-          docker run -d --rm --name frontend-ci-test -p 8080:80 frontend-ci
+          docker run -d --rm --name frontend-ci-test frontend-ci
           sleep 10
           docker ps --filter "name=frontend-ci-test" --format "{{.Names}}"
           docker stop frontend-ci-test
