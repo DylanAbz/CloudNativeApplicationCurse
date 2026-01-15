@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Cible pour l'environnement de développement
+  - job_name: 'dev-app'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['backend:3000'] # Le port interne du conteneur est 3000
+        labels:
+          env: 'dev'
+
+  # Cibles pour l'environnement de production (Blue/Green)
+  - job_name: 'prod-app'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['backend-blue:3000']
+        labels:
+          env: 'prod'
+          color: 'blue'
+      - targets: ['backend-green:3000']
+        labels:
+          env: 'prod'
+          color: 'green'
