@@ -259,11 +259,12 @@ jobs:
           id: color
           shell: powershell
           run: |
-            $path = "C:\blue-green\active_color"
-
-            if (-not (Test-Path "C:\blue-green")) {
-              New-Item -ItemType Directory -Path "C:\blue-green" | Out-Null
+            $stateRoot = Join-Path (Split-Path "${{ github.workspace }}") "_bluegreen_state"
+            if (-not (Test-Path $stateRoot)) {
+              New-Item -ItemType Directory -Path $stateRoot | Out-Null
             }
+
+            $path = Join-Path $stateRoot "active_color"
 
             if (Test-Path $path) {
               $active = (Get-Content $path).Trim()
@@ -271,17 +272,14 @@ jobs:
               $active = "blue"
             }
 
-            if ($active -eq "blue") {
-              $next = "green"
-            } else {
-              $next = "blue"
-            }
+            if ($active -eq "blue") { $next = "green" } else { $next = "blue" }
 
             Write-Host "Active color: $active"
             Write-Host "Next color: $next"
 
             "active=$active" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
             "next=$next"     | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        
         
 
         # Déployer la nouvelle version sur la couleur inactive
@@ -312,11 +310,15 @@ jobs:
         - name: Update active color file
           shell: powershell
           run: |
-            $next = "${{ steps.color.outputs.next }}"
-            if (-not (Test-Path "C:\blue-green")) {
-              New-Item -ItemType Directory -Path "C:\blue-green" | Out-Null
+            $stateRoot = Join-Path (Split-Path "${{ github.workspace }}") "_bluegreen_state"
+            if (-not (Test-Path $stateRoot)) {
+              New-Item -ItemType Directory -Path $stateRoot | Out-Null
             }
-            Set-Content -Path "C:\blue-green\active_color" -Value $next
+
+            $path = Join-Path $stateRoot "active_color"
+            $next = "${{ steps.color.outputs.next }}"
+            Set-Content -Path $path -Value $next
+        
         
 
   
