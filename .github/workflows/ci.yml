@@ -286,12 +286,13 @@ jobs:
             $sha  = "${{ github.sha }}"
             $env:BACKEND_TAG  = $sha
             $env:FRONTEND_TAG = $sha
-            
+
             if ($next -eq "blue") {
-              docker compose -f docker-compose.base.yml -f docker-compose.blue.yml up -d --env-file .env
+              docker compose --env-file .env -f docker-compose.base.yml -f docker-compose.blue.yml up -d
             } else {
-              docker compose -f docker-compose.base.yml -f docker-compose.green.yml up -d --env-file .env
+              docker compose --env-file .env -f docker-compose.base.yml -f docker-compose.green.yml up -d
             }
+        
 
         # Bascule du proxy vers la nouvelle couleur
         - name: Switch Nginx to next color
