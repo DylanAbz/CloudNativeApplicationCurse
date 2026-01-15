@@ -86,6 +86,35 @@ L’application est alors accessible après chaque pipeline complet :
 - Backend : http://localhost:3000
 
 
+## 👁️ Monitoring et Observabilité 
+
+Pour lancer la stack de monitoring (Prometheus, Grafana, Loki, Promtail), suivez ces étapes :
+
+**Prérequis** : Assurez-vous que votre application principale (backend, frontend, postgres) est déjà en cours d'exécution via Docker Compose.
+
+1.  **Lancer la stack de monitoring** :
+    Depuis la racine du projet :
+    ```bash
+    docker compose -f docker-compose.monitoring.yml up -d
+    ```
+2.  **Accéder aux services de monitoring** :
+    *   **Grafana** (dashboards, logs) : [http://localhost:3001](http://localhost:3001)
+        *   Identifiants par défaut : `admin` / `admin` (vous serez invité à les changer à la première connexion).
+    *   **Prometheus** (collecte de métriques) : [http://localhost:9090](http://localhost:9090)
+        *   Vérifiez le statut des cibles (`Targets`) pour confirmer la bonne collecte des métriques.
+    *   **Loki** (agrégateur de logs) : Accessible en interne sur `http://loki:3100` (utilisé par Grafana).
+
+3.  **Arrêter la stack de monitoring** :
+    ```bash
+    docker compose -f docker-compose.monitoring.yml down
+    ```
+
+**Note importante** : Après toute modification du code du backend (par exemple, pour ajouter de nouvelles métriques), vous devez **reconstruire l'image Docker du backend** et redémarrer son conteneur pour que les changements soient pris en compte :
+```bash
+docker compose build backend # ou backend-blue, backend-green
+docker compose up -d --force-recreate --no-deps backend # Adaptez le nom du service
+```
+
 ## 🔵🟢 Stratégie de déploiement Blue/Green
 
 L’application utilise une stratégie de déploiement **blue/green** pour éviter les interruptions de service et permettre un rollback très rapide.[1][2]
@@ -98,7 +127,6 @@ L’application utilise une stratégie de déploiement **blue/green** pour évit
 - Un proxy Nginx (`gym_proxy`) écoute sur le port `80` et route tout le trafic vers **une seule couleur active à la fois** (blue *ou* green).[3][1]
 - Le choix de la couleur active est piloté par la CI et stocké dans un fichier d’état persistant sur la machine du runner GitHub Actions (en dehors du repo).[4][5]
 
-***
 
 ## 🌐 Fonctionnement du proxy Nginx
 
@@ -154,7 +182,6 @@ docker exec gym_proxy nginx -s reload
 
 Ce reload applique immédiatement la nouvelle couleur sans redémarrer Nginx ni interrompre les connexions.[8][9]
 
-***
 
 ## ⚙ Conditions d’activation du Blue/Green
 

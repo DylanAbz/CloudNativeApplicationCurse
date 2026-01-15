@@ -9,15 +9,15 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: containers
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: containerlogs
-    pipeline_stages:
-      - docker: {}
-    relabel_configs:
-      - source_labels: ['__meta_docker_container_name']
-        regex: '/(.*)'
-        target_label: 'container'
+- job_name: system
+  docker_sd_configs:
+    - host: unix:///var/run/docker.sock
+      refresh_interval: 5s
+  relabel_configs:
+    # Attribue un label "container" avec le nom du conteneur
+    - source_labels: ['__meta_docker_container_name']
+      regex: '/(.*)'
+      target_label: 'container'
+    # Attribue un label "service" avec le nom du service docker-compose
+    - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+      target_label: 'service'
