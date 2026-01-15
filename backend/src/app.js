@@ -12,7 +12,7 @@ const httpRequestDurationMicroseconds = new client.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'code'],
-  buckets: [0.1, 0.5, 1, 1.5],
+  buckets: [0.1, 0.5, 1, 1.5, 5], // Buckets en secondes
 });
 
 const userRoutes = require('./routes/userRoutes');
@@ -32,11 +32,11 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 2. Middleware pour mesurer la durée des requêtes
+// 2. Middleware pour mesurer la durée des requêtes (placé avant les routes)
 app.use((req, res, next) => {
   const end = httpRequestDurationMicroseconds.startTimer();
   res.on('finish', () => {
-    // Tente de trouver une route correspondante pour un étiquetage propre
+    // Utilise la route correspondante si elle existe, sinon le chemin de la requête
     const route = req.route ? req.route.path : req.path;
     end({ route, code: res.statusCode, method: req.method });
   });
