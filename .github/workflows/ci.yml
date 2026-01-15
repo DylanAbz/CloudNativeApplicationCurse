@@ -259,24 +259,30 @@ jobs:
           id: color
           shell: powershell
           run: |
-            $path = "blue-green/active_color"
+            $path = "C:\blue-green\active_color"
+
+            if (-not (Test-Path "C:\blue-green")) {
+              New-Item -ItemType Directory -Path "C:\blue-green" | Out-Null
+            }
+
             if (Test-Path $path) {
               $active = (Get-Content $path).Trim()
             } else {
               $active = "blue"
             }
-            
+
             if ($active -eq "blue") {
               $next = "green"
             } else {
               $next = "blue"
             }
-            
+
             Write-Host "Active color: $active"
             Write-Host "Next color: $next"
-            
+
             "active=$active" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
             "next=$next"     | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        
 
         # Déployer la nouvelle version sur la couleur inactive
         - name: Deploy next color stack
@@ -307,7 +313,11 @@ jobs:
           shell: powershell
           run: |
             $next = "${{ steps.color.outputs.next }}"
-            Set-Content -Path "blue-green/active_color" -Value $next
+            if (-not (Test-Path "C:\blue-green")) {
+              New-Item -ItemType Directory -Path "C:\blue-green" | Out-Null
+            }
+            Set-Content -Path "C:\blue-green\active_color" -Value $next
+        
 
   
 

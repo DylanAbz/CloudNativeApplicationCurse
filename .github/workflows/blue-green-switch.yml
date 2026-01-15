@@ -1,0 +1,49 @@
+name: Blue/Green switch only
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  switch:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine active and next color (from persistent file)
+        id: color
+        shell: powershell
+        run: |
+          $path = "C:\blue-green\active_color"
+
+          if (-not (Test-Path "C:\blue-green")) {
+            New-Item -ItemType Directory -Path "C:\blue-green" | Out-Null
+          }
+
+          if (Test-Path $path) {
+            $active = (Get-Content $path).Trim()
+          } else {
+            $active = "blue"
+          }
+
+          if ($active -eq "blue") { $next = "green" } else { $next = "blue" }
+
+          "active=$active" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "next=$next"     | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Switch Nginx to next color
+        shell: powershell
+        run: |
+          $next = "${{ steps.color.outputs.next }}"
+          Copy-Item "proxy/active_upstream.$next.conf" "proxy/active_upstream.conf" -Force
+          docker exec gym_proxy nginx -s reload
+
+      - name: Update active color file
+        shell: powershell
+        run: |
+          $next = "${{ steps.color.outputs.next }}"
+          if (-not (Test-Path "C:\blue-green")) {
+            New-Item -ItemType Directory -Path "C:\blue-green" | Out-Null
+          }
+          Set-Content -Path "C:\blue-green\active_color" -Value $next
