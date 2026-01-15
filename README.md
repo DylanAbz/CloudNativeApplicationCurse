@@ -84,3 +84,112 @@ Conditions d’exécution :
 L’application est alors accessible après chaque pipeline complet :
 - Frontend : http://localhost:8080
 - Backend : http://localhost:3000
+
+
+## 🔵🟢 Stratégie de déploiement Blue/Green
+
+L’application utilise une stratégie de déploiement **blue/green** pour éviter les interruptions de service et permettre un rollback très rapide.[1][2]
+
+### Principe
+
+- Deux environnements applicatifs sont présents en parallèle :
+  - stack **blue** : `backend-blue` / `frontend-blue`
+  - stack **green** : `backend-green` / `frontend-green`
+- Un proxy Nginx (`gym_proxy`) écoute sur le port `80` et route tout le trafic vers **une seule couleur active à la fois** (blue *ou* green).[3][1]
+- Le choix de la couleur active est piloté par la CI et stocké dans un fichier d’état persistant sur la machine du runner GitHub Actions (en dehors du repo).[4][5]
+
+***
+
+## 🌐 Fonctionnement du proxy Nginx
+
+Le service `proxy` dans `docker-compose` :
+
+```yaml
+proxy:
+  image: nginx:alpine
+  container_name: gym_proxy
+  ports:
+    - "80:80"
+  volumes:
+    - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+    - ./proxy/active_upstream.conf:/etc/nginx/conf.d/active_upstream.conf:ro
+  networks:
+    - app-network
+```
+
+- `nginx.conf` inclut le fichier `active_upstream.conf` qui définit les upstreams “actifs” :[6][7]
+
+```nginx
+include /etc/nginx/conf.d/active_upstream.conf;
+
+server {
+  listen 80;
+
+  location /      { proxy_pass http://frontend_active; }
+  location /api/  { proxy_pass http://backend_active; }
+}
+```
+
+- Les fichiers suivants définissent quel environnement est actif :
+
+`proxy/active_upstream.blue.conf` :
+
+```nginx
+upstream backend_active  { server backend-blue:3000; }
+upstream frontend_active { server frontend-blue:80; }
+```
+
+`proxy/active_upstream.green.conf` :
+
+```nginx
+upstream backend_active  { server backend-green:3000; }
+upstream frontend_active { server frontend-green:80; }
+```
+
+- La CI copie l’un de ces fichiers vers `proxy/active_upstream.conf` puis exécute :
+
+```bash
+docker exec gym_proxy nginx -s reload
+```
+
+Ce reload applique immédiatement la nouvelle couleur sans redémarrer Nginx ni interrompre les connexions.[8][9]
+
+***
+
+## ⚙ Conditions d’activation du Blue/Green
+
+La logique blue/green repose sur **deux workflows GitHub Actions** exécutés sur un runner self-hosted avec Docker :[10][11]
+
+### 1. Workflow de déploiement complet (sur `main`)
+
+Déclenché automatiquement sur la branche `main` (merge de `develop` → `main`) :
+
+- Lit la couleur active dans un fichier d’état persistant (en dehors du repo, dérivé de `${{ github.workspace }}`).
+- Calcule la couleur suivante :
+  - si `active = blue` → `next = green`
+  - si `active = green` → `next = blue`
+- Déploie la nouvelle version sur la couleur **inactive** (blue ou green) via `docker compose` avec les fichiers `docker-compose.base.yml` + `docker-compose.<color>.yml`.
+- Copie `proxy/active_upstream.<next>.conf` vers `proxy/active_upstream.conf`.
+- Recharge Nginx dans `gym_proxy` (`nginx -s reload`).
+- Met à jour le fichier d’état avec la nouvelle couleur (`active_color = next`).[1][4]
+
+Conditions pour que ce workflow tourne correctement :
+
+- Runner GitHub Actions **self-hosted** avec Docker.
+- Images backend / frontend disponibles sur GHCR (`ghcr.io/dylanabz/...:<SHA>`).
+- Fichiers `proxy/active_upstream.blue.conf` et `proxy/active_upstream.green.conf` présents et valides.
+
+### 2. Workflow manuel de switch (rollback / bascule rapide)
+
+Un second workflow, déclenché manuellement via `workflow_dispatch` dans l’onglet **Actions**, permet de **changer uniquement la couleur active** sans rebuild :[11][12][13]
+
+- Lit la couleur actuelle depuis le fichier d’état persistant.
+- Calcule la couleur inverse (blue ↔ green).
+- Copie `proxy/active_upstream.<next>.conf` vers `proxy/active_upstream.conf`.
+- Recharge Nginx dans `gym_proxy`.
+- Met à jour l’état avec la nouvelle couleur.
+
+Ce workflow est utilisé pour :
+
+- **Rollback** rapide en cas de bug (revenir sur l’ancienne couleur).
+- **Test** de la bascule blue/green sans relancer tout le pipeline CI.[14][15]
